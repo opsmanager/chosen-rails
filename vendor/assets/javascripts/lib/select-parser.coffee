@@ -1,4 +1,4 @@
-class SelectParser
+Window.SelectParser = class SelectParser
 
   constructor: ->
     @options_index = 0
@@ -62,5 +62,6 @@ SelectParser.select_to_array = (select) ->
   parser = new SelectParser()
   parser.add_node( child ) for child in select.childNodes
   parser.parsed
+
 
 window.SelectParser = SelectParser

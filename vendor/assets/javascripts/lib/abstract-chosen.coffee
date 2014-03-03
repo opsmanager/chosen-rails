@@ -1,4 +1,4 @@
-class AbstractChosen
+window.AbstractChosen = class AbstractChosen
 
   constructor: (@form_field, @options={}) ->
     return unless AbstractChosen.browser_is_supported()
@@ -29,6 +29,9 @@ class AbstractChosen
     @inherit_select_classes = @options.inherit_select_classes || false
     @display_selected_options = if @options.display_selected_options? then @options.display_selected_options else true
     @display_disabled_options = if @options.display_disabled_options? then @options.display_disabled_options else true
+    if @options.ignore_regexp?
+      @ignore_regexp = @options.ignore_regexp
+      @ignore_regexp.global = true
 
   set_default_text: ->
     if @form_field.getAttribute("data-placeholder")
@@ -130,7 +133,12 @@ class AbstractChosen
     results = 0
 
     searchText = this.get_search_text()
-    escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
+    if @ignore_regexp
+      cleanSearchText = searchText.replace(@ignore_regexp, '')
+    else
+      cleanSearchText = searchText
+
+    escapedSearchText = cleanSearchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
     regexAnchor = if @search_contains then "" else "^"
     regex = new RegExp(regexAnchor + escapedSearchText, 'i')
     zregex = new RegExp(escapedSearchText, 'i')
@@ -158,13 +166,13 @@ class AbstractChosen
           results += 1 if option.search_match and not option.group
 
           if option.search_match
-            if searchText.length
+            if searchText.length && !@ignore_regexp
               startpos = option.search_text.search zregex
               text = option.search_text.substr(0, startpos + searchText.length) + '</em>' + option.search_text.substr(startpos + searchText.length)
               option.search_text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
 
             results_group.group_match = true if results_group?
-          
+
           else if option.group_array_index? and @results_data[option.group_array_index].search_match
             option.search_match = true
 
@@ -178,7 +186,12 @@ class AbstractChosen
       this.winnow_results_set_highlight()
 
   search_string_match: (search_string, regex) ->
-    if regex.test search_string
+    if @ignore_regexp
+      search_text = search_string.replace(@ignore_regexp, '')
+    else
+      search_text = search_string
+
+    if regex.test search_text
       return true
     else if @enable_split_word_search and (search_string.indexOf(" ") >= 0 or search_string.indexOf("[") == 0)
       #TODO: replace this substitution of /\[\]/ with a list of characters to skip.
@@ -194,7 +207,7 @@ class AbstractChosen
     @selected_option_count = 0
     for option in @form_field.options
       @selected_option_count += 1 if option.selected
-    
+
     return @selected_option_count
 
   choices_click: (evt) ->
